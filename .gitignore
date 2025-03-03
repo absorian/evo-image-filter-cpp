@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+.idea
+build*
+test_images
+test_shapes
+/*.png
