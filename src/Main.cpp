@@ -132,11 +132,10 @@ int main(int argc, char **argv) {
     std::vector<shape_candidate> winners(top_shapes_count);
     alpha_img_t canvas(base_img.dimensions());
 
-    fill_pixels(view(canvas), alpha_pix_t(128, 128, 128, 255));
+    fill_pixels(view(canvas), alpha_pix_t(0, 0, 0, 0));
     std::cout << ts.stamp() << "Created canvas" << '\n';
 
-    int score = overlay_compare(base_img, base_img, canvas, {0, 0});
-    std::cout << ts.stamp() << "Computed initial score: " << score << '\n';
+    long long score = 0;
 
     ts.sub("shapes");
     for (int csi = 0; csi < canvas_shapes_count; ++csi) {
