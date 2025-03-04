@@ -68,11 +68,16 @@ int main(int argc, char **argv) {
                                              "higher the faster, but with higher memory consumption",
                                              {"sortout-percent"}, 100);
     args::ValueFlag<int> arg_threads_count(parser, "threads_count",
-                                       "Number of threads to utilize",
-                                       {'j'}, 16);
+                                           "Number of threads to utilize",
+                                           {'j'}, 16);
     args::ValueFlag<int> arg_shapes_per_save(parser, "shapes_per_save",
-                                       "Each N of added shapes the program will save the canvas",
-                                       {"shapes-save"}, 5);
+                                             "Each N of added shapes the program will save the canvas",
+                                             {"shapes-save"}, 5);
+
+    args::ValueFlagList<int> arg_shape_resize(parser, "shape_resize",
+                                              "Resize shapes to specified resolution, if one value is passed,"
+                                              "shape will be N*N, if two values - N*M",
+                                              {"shape-resize"}, {150, 150});
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help &) {
@@ -104,24 +109,35 @@ int main(int argc, char **argv) {
 
     if (status(img_path).type() != std::filesystem::file_type::regular
         || status(dir_path).type() != std::filesystem::file_type::directory) {
-        throw std::invalid_argument("Either source image path or shapes directory are invalid");
+        throw std::invalid_argument("image and/or shapes_dir are invalid");
     }
     std::filesystem::path out_path;
     if (arg_output) {
         out_path.assign(args::get(arg_output));
         auto ext = out_path.extension();
         if (ext != ".png") {
-            throw std::invalid_argument("Output image extension must be 'png'");
+            throw std::invalid_argument("output extension must be 'png'");
         }
     } else {
         out_path.assign("./" + img_path.stem().string() + "-out.png");
+    }
+
+    boost::gil::point<int> shape_sz;
+    {
+        const auto& sz_arg = args::get(arg_shape_resize);
+        if (sz_arg.size() == 1)
+            shape_sz = {sz_arg[0], sz_arg[0]};
+        else if (sz_arg.size() == 2)
+            shape_sz = {sz_arg[0], sz_arg[1]};
+        else
+            throw std::invalid_argument("shape_resize accepts either one or two values");
     }
 
     Timestamper ts("main");
     StepSorter ssc(top_shapes_count, args::get(arg_sortout_percent));
     Parallelizer pll(threads_count);
 
-    Shaper shp(dir_path);
+    Shaper shp(dir_path, shape_sz);
     std::cout << ts.stamp() << "Consumed shapes directory" << '\n';
 
     auto base_img = read_png_or_jpg(img_path);

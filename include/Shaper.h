@@ -26,7 +26,7 @@ public:
     const float mut_boundaries_shape_deg = 60;
     const float mut_boundaries_shape_sz_mul = 0.5;
 
-    explicit Shaper(const std::string &dir);
+    explicit Shaper(const std::string &dir, boost::gil::point<int> shape_sz);
 
     void setBaseImage(const alpha_img_t &img);
 

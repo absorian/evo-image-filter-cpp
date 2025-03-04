@@ -9,7 +9,7 @@
 
 using namespace boost::gil;
 
-Shaper::Shaper(const std::string &dir) {
+Shaper::Shaper(const std::string &dir, point<int> shape_sz) {
     std::filesystem::path path{dir};
 
     for (const auto &entry: std::filesystem::directory_iterator{path}) {
@@ -22,7 +22,7 @@ Shaper::Shaper(const std::string &dir) {
             std::cerr << "Shaper: failed to read image \"" << entry.path().filename().string() << "\"";
         }
 
-        templates.push_back(scale_image(grayscale_filter(img), {100, 100}));
+        templates.push_back(scale_image(grayscale_filter(img), shape_sz));
     }
     if (templates.empty()) {
         throw std::runtime_error("Shaper got nothing from specified directory: " + path.string());
