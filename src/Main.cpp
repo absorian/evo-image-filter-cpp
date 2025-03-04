@@ -208,6 +208,7 @@ int main(int argc, char **argv) {
         ts.out();
     }
     ts.out();
+    write_view(out_path, const_view(canvas), boost::gil::png_tag());
 
     return 0;
 }
