@@ -1,5 +1,3 @@
-
-
 #include "Shaper.h"
 
 #include <iostream>
@@ -35,20 +33,19 @@ void Shaper::setBaseImage(const alpha_img_t &img) {
     base_img = img;
     auto dim = base_img.dimensions();
 
-    coords_bounds.xlow = -(gen_boundaries_size_mul - 1) * dim.x;
-    coords_bounds.xhigh = dim.x * gen_boundaries_size_mul;
-    coords_bounds.ylow = -(gen_boundaries_size_mul - 1) * dim.y;
-    coords_bounds.yhigh = dim.y * gen_boundaries_size_mul;
+    coords_bounds.xlow = -(gen_boundaries_sz_mul - 1) * dim.x;
+    coords_bounds.xhigh = dim.x * gen_boundaries_sz_mul;
+    coords_bounds.ylow = -(gen_boundaries_sz_mul - 1) * dim.y;
+    coords_bounds.yhigh = dim.y * gen_boundaries_sz_mul;
 }
 
 shape_metadata Shaper::mutateShapeData(const shape_metadata &md) {
-    const float base_img_mul = mut_boundaries_base_img_mul;
     const auto base_img_dim = base_img.dimensions();
     point coords{
-        lrand(-base_img_mul * base_img_dim.x,
-              base_img_mul * base_img_dim.x),
-        lrand(-base_img_mul * base_img_dim.y,
-              base_img_mul * base_img_dim.y),
+        lrand(-mut_boundaries_base_img_mul * base_img_dim.x,
+              mut_boundaries_base_img_mul * base_img_dim.x),
+        lrand(-mut_boundaries_base_img_mul * base_img_dim.y,
+              mut_boundaries_base_img_mul * base_img_dim.y),
     };
     coords += md.coords;
 
@@ -64,8 +61,8 @@ shape_metadata Shaper::mutateShapeData(const shape_metadata &md) {
 
     return {
         coords,
-        md.deg + drand(-60, 60),
-        md.sz_mul * drand(0.5, 1.5),
+        md.deg + drand(-mut_boundaries_shape_deg, mut_boundaries_shape_deg),
+        md.sz_mul * drand(1 - mut_boundaries_shape_sz_mul, 1 + mut_boundaries_shape_sz_mul),
         md.idx
     };
 }
