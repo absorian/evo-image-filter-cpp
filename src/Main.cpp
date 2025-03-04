@@ -125,6 +125,7 @@ int main(int argc, char **argv) {
     std::cout << ts.stamp() << "Consumed shapes directory" << '\n';
 
     auto base_img = read_png_or_jpg(img_path);
+    shp.setBaseImage(base_img);
     std::cout << ts.stamp() << "Retrieved base image" << '\n';
 
     std::vector<shape_candidate> shapes(ssc.storage_size);
@@ -146,7 +147,7 @@ int main(int argc, char **argv) {
                      pll.call<decltype(shapes)>(b_begin, b_sz, [&](auto bb_begin, auto bb_end) {
                          for (auto bb_it = bb_begin; bb_it != bb_end; ++bb_it) {
                              shape_candidate &sh = *bb_it;
-                             sh.md = shp.generateShapeData(base_img);
+                             sh.md = shp.generateShapeData();
 
                              sh.score_delta = overlay_compare(base_img, canvas,
                                                               shp.applyShapeData(sh.md), sh.md.coords);
