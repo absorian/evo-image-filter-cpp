@@ -19,8 +19,6 @@
 struct shape_candidate {
     int score_delta;
     shape_metadata md;
-
-    std::future<void> fut;
 };
 
 enum image_extension {
