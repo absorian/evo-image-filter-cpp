@@ -28,7 +28,6 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} PUBLIC stdc++fs)
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        Boost::filesystem
         JPEG::JPEG
         PNG::PNG
 )
