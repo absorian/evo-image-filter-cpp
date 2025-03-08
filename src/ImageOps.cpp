@@ -68,21 +68,12 @@ alpha_img_t scale_image(const alpha_img_t &img, const point<int> &sz) {
 
 alpha_img_t transform_image(const alpha_img_t &img, double deg, double sz_mul, const pix_t &col) {
     auto new_dim = img.dimensions() * sz_mul;
-    auto resized_img =
-            scale_image(img, {static_cast<int>(new_dim.x), static_cast<int>(new_dim.y)});
+    alpha_img_t tr_img(point<long int>{static_cast<int>(new_dim.x), static_cast<int>(new_dim.y)});
 
-    alpha_img_t rotated_img(resized_img.dimensions());
-    matrix3x2<double> mat =
-            matrix3x2<double>::get_translate(-resized_img.dimensions() / 2.) *
-            // matrix3x2<double>::get_scale(point(1 / size_mul, 1 / size_mul)) *
-            matrix3x2<double>::get_rotate(deg * M_PI / 180.) *
-            matrix3x2<double>::get_translate(resized_img.dimensions() / 2.);
+    resample_subimage(const_view(img), view(tr_img), 0.0, 0.0,
+                      img.width(), img.height(), deg * M_PI / 180., nearest_neighbor_sampler());
 
-    resample_pixels(const_view(resized_img), view(rotated_img), mat, nearest_neighbor_sampler());
-
-    auto col_img = grayscale_colorize(rotated_img, col);
-
-    return col_img;
+    return grayscale_colorize(tr_img, col);
 }
 
 alpha_img_t read_png_or_jpg(const std::string &path) {
