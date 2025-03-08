@@ -61,10 +61,6 @@ int main(int argc, char **argv) {
                                                "Number of generations to simulate before choosing the shape",
                                                {"generations"}, 5);
 
-    args::ValueFlag<int> arg_sortout_percent(parser, "sortout_percent",
-                                             "Percentage of shapes storage above survived count, "
-                                             "higher the faster, but with higher memory consumption",
-                                             {"sortout-percent"}, 100);
     args::ValueFlag<int> arg_threads_count(parser, "threads_count",
                                            "Number of threads to utilize",
                                            {'j'}, 16);
@@ -132,7 +128,7 @@ int main(int argc, char **argv) {
     }
 
     Timestamper ts("main");
-    StepSorter ssc(top_shapes_count, args::get(arg_sortout_percent));
+    StepSorter ssc(top_shapes_count);
     Parallelizer pll(threads_count);
 
     Shaper shp(dir_path, shape_sz);

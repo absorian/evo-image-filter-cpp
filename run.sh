@@ -1,7 +1,6 @@
 ./build/evo_image_filter_cpp \
   -o output.png \
   -j 20 \
-  --sortout-percent 100 \
   --shapes-save 5 \
   --shapes 2000 \
   --init-swarm 800 \

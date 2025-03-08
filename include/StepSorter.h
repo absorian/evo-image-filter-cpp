@@ -9,10 +9,10 @@ public:
     const int next_batch_size;
     const int storage_size;
 
-    StepSorter(int keep_objs_count, int sortout_overhead_percent)
+    StepSorter(int keep_objs_count)
         : keep_objs_count(keep_objs_count),
-          first_batch_size((100 + sortout_overhead_percent) * 0.01 * keep_objs_count),
-          next_batch_size(sortout_overhead_percent * 0.01 * keep_objs_count),
+          first_batch_size(2 * keep_objs_count),
+          next_batch_size(keep_objs_count),
           storage_size(first_batch_size) {
     }
 
