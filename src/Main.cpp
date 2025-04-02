@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
     args::ValueFlagList<int> arg_shape_resize(parser, "shape_resize",
                                               "Resize shapes to specified resolution, if one value is passed,"
                                               "shape will be N*N, if two values - N*M",
-                                              {"shape-resize"}, {150, 150});
+                                              {"shape-resize"});
     try {
         parser.ParseCLI(argc, argv);
     } catch (const args::Help &) {
@@ -124,16 +124,24 @@ int main(int argc, char **argv) {
         out_path.assign("./" + img_path.stem().string() + "-out.png");
     }
 
-    boost::gil::point<int> shape_sz;
-    {
-        const auto& sz_arg = args::get(arg_shape_resize);
-        if (sz_arg.size() == 1)
-            shape_sz = {sz_arg[0], sz_arg[0]};
-        else if (sz_arg.size() == 2)
-            shape_sz = {sz_arg[0], sz_arg[1]};
-        else
+    boost::gil::point<int> shape_sz{-1, -1};
+    do {
+        const auto &sz_arg = args::get(arg_shape_resize);
+        if (sz_arg.empty()) break;
+        if (sz_arg.size() > 2)
             throw std::invalid_argument("shape_resize accepts either one or two values");
-    }
+
+        if (sz_arg[0] <= 0) {
+            throw std::invalid_argument("shape_resize accepts only positive values");
+        }
+        shape_sz = {sz_arg[0], sz_arg[0]};
+        if (sz_arg.size() < 2) break;
+
+        if (sz_arg[1] <= 0) {
+            throw std::invalid_argument("shape_resize accepts only positive values");
+        }
+        shape_sz.y = sz_arg[1];
+    } while(false);
 
     Timestamper ts("prog");
     StepSorter ssc(top_shapes_count);
