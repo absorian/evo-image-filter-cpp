@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
             throw std::invalid_argument("shape_resize accepts either one or two values");
     }
 
-    Timestamper ts("main");
+    Timestamper ts("prog");
     StepSorter ssc(top_shapes_count);
     Parallelizer pll(threads_count);
 
@@ -156,7 +156,6 @@ int main(int argc, char **argv) {
 
     long long score = 0;
 
-    ts.sub("shapes");
     for (int csi = 0; csi < canvas_shapes_count; ++csi) {
         std::cout << "----------------------------------" << '\n';
         ts.sub("shape#" + std::to_string(csi + 1));
@@ -231,8 +230,8 @@ int main(int argc, char **argv) {
             && pr_sc >= score_threshold) {
             break;
         }
+        ts.dry_out();
     }
-    ts.out();
     write_view(out_path, const_view(canvas), boost::gil::png_tag());
 
     return 0;
