@@ -95,20 +95,27 @@ alpha_img_t read_png_or_jpg(const std::string &path) {
 }
 
 int color_similarity_score(const alpha_pix_t &c1, const alpha_pix_t &c2) {
-    double sim = 1 - (std::abs(get_color(c1, red_t()) - get_color(c2, red_t()))
-                      + std::abs(get_color(c1, green_t()) - get_color(c2, green_t()))
-                      + std::abs(get_color(c1, blue_t()) - get_color(c2, blue_t()))) / 255. * 3;
+    double sim = 0;
+    sim += std::abs(get_color(c1, red_t()) - get_color(c2, red_t())) / 255.;
+    sim += std::abs(get_color(c1, green_t()) - get_color(c2, green_t())) / 255.;
+    sim += std::abs(get_color(c1, blue_t()) - get_color(c2, blue_t())) / 255.;
+
+    // average difference
+    sim /= 3;
+    // invert to get score
+    sim = 1 - sim;
+    // 0..100
     return static_cast<int>(sim * 100);
 }
 
-int overlay_compare(const alpha_img_t &base_img, alpha_img_t &canvas, const alpha_img_t &shape,
+int64_t overlay_compare(const alpha_img_t &base_img, alpha_img_t &canvas, const alpha_img_t &shape,
                     point<int> coords, bool set) {
     if (base_img.dimensions() != canvas.dimensions()) {
         std::cerr << "Base image and canvas are not the same size\n";
         return -1;
     }
 
-    int sd = 0;
+    int64_t sd = 0;
     auto sview = const_view(shape);
     auto cview = view(canvas);
     auto bview = const_view(base_img);

@@ -17,7 +17,7 @@
 
 
 struct shape_candidate {
-    int score_delta;
+    int64_t score_delta;
     shape_metadata md;
 };
 
@@ -25,6 +25,9 @@ enum image_extension {
     EXT_PNG,
     EXT_JPG
 };
+
+#define map_range(a1,a2,b1,b2,s) (b1 + (s - a1) * (b2 - b1) / (a2 - a1))
+#define pretty_score(overall, score) map_range(0, (overall * 100), 0, 10000, score)
 
 int main(int argc, char **argv) {
     args::ArgumentParser parser(
@@ -47,6 +50,10 @@ int main(int argc, char **argv) {
     args::ValueFlag<int> arg_shapes_count(parser, "shapes_count",
                                           "Number of shapes to put into the final image",
                                           {'s', "shapes"}, 2000);
+
+    args::ValueFlag<int> arg_score_threshold(parser, "score_threshold",
+                                              "Stop score in range 0..10000",
+                                              {'t', "threshold"}, -1);
 
     args::ValueFlag<int> arg_initial_swarm(parser, "initial_swarm",
                                            "Number of shapes in initial swarm",
@@ -94,7 +101,8 @@ int main(int argc, char **argv) {
     const int top_shapes_count = args::get(arg_survived_count);
     const int generations_count = args::get(arg_generations_count);
 
-    const int canvas_shapes_count = args::get(arg_shapes_count);
+    const int score_threshold = args::get(arg_score_threshold);
+    const int canvas_shapes_count = score_threshold > 0 ? INT_MAX : args::get(arg_shapes_count);
     const int threads_count = args::get(arg_threads_count);
     const int shapes_per_save = args::get(arg_shapes_per_save);
 
@@ -136,6 +144,7 @@ int main(int argc, char **argv) {
 
     auto base_img = read_png_or_jpg(img_path);
     shp.setBaseImage(base_img);
+    const long base_pix_count = base_img.height() * base_img.width();
     std::cout << ts.stamp() << "Retrieved base image" << '\n';
 
     std::vector<shape_candidate> shapes(ssc.storage_size);
@@ -202,7 +211,8 @@ int main(int argc, char **argv) {
                      [](const shape_candidate &a, const shape_candidate &b) {
                          return a.score_delta > b.score_delta;
                      });
-            std::cout << ts.stamp() << "#" << gi + 1 << ": best_score_delta=" << shapes[0].score_delta << '\n';
+            std::cout << ts.stamp() << "#" << gi + 1
+                    << ": best_raw_score_delta=" << shapes[0].score_delta << '\n';
         }
         ts.out();
 
@@ -210,12 +220,17 @@ int main(int argc, char **argv) {
         score += winwin.score_delta;
         overlay_compare(base_img, canvas, shp.applyShapeData(winwin.md), winwin.md.coords, true);
 
-        std::cout << ts.stamp() << "Added shape, new_score=" << score << '\n';
+        int pr_sc = pretty_score(base_pix_count, score);
+        std::cout << ts.stamp() << "Added shape, new_pretty_score=" << pr_sc << '\n';
         if ((csi + 1) % shapes_per_save == 0) {
             write_view(out_path, const_view(canvas), boost::gil::png_tag());
             std::cout << ts.stamp() << "Saved canvas" << '\n';
         }
         ts.out();
+        if (score_threshold > 0
+            && pr_sc >= score_threshold) {
+            break;
+        }
     }
     ts.out();
     write_view(out_path, const_view(canvas), boost::gil::png_tag());

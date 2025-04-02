@@ -14,6 +14,6 @@ alpha_img_t read_png_or_jpg(const std::string &path);
 
 int color_similarity_score(const alpha_pix_t &c1, const alpha_pix_t &c2);
 
-int overlay_compare(const alpha_img_t &base_img, alpha_img_t &canvas, const alpha_img_t &shape,
+int64_t overlay_compare(const alpha_img_t &base_img, alpha_img_t &canvas, const alpha_img_t &shape,
                     boost::gil::point<int> coords, bool set = false);
 
