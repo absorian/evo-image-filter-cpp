@@ -158,6 +158,7 @@ int main(int argc, char **argv) {
     std::vector<shape_candidate> shapes(ssc.storage_size);
     std::vector<shape_candidate> winners(top_shapes_count);
     alpha_img_t canvas(base_img.dimensions());
+    std::vector<shape_candidate> best_from_gen(generations_count);
 
     fill_pixels(view(canvas), alpha_pix_t(0, 0, 0, 0));
     std::cout << ts.stamp() << "Created canvas" << '\n';
@@ -220,10 +221,15 @@ int main(int argc, char **argv) {
                      });
             std::cout << ts.stamp() << "#" << gi + 1
                     << ": best_raw_score_delta=" << shapes[0].score_delta << '\n';
+            best_from_gen[gi] = shapes[0];
         }
+        std::ranges::sort(best_from_gen,
+                          [](const shape_candidate &a, const shape_candidate &b) {
+                              return a.score_delta > b.score_delta;
+                          });
         ts.out();
 
-        const auto &winwin = shapes[0];
+        const auto &winwin = best_from_gen[0];
         score += winwin.score_delta;
         overlay_compare(base_img, canvas, shp.applyShapeData(winwin.md), winwin.md.coords, true);
 
