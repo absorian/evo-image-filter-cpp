@@ -1,6 +1,5 @@
 #include <iostream>
 #include <filesystem>
-#include <mutex>
 
 #include <boost/gil/image.hpp>
 #include <boost/gil/extension/io/jpeg.hpp>
@@ -156,7 +155,7 @@ int main(int argc, char **argv) {
     std::cout << ts.stamp() << "Retrieved base image" << '\n';
 
     std::vector<shape_candidate> shapes(ssc.storage_size);
-    std::vector<shape_candidate> winners(top_shapes_count);
+    std::vector<std::pair<shape_candidate, int> > winners(top_shapes_count);
     alpha_img_t canvas(base_img.dimensions());
     std::vector<shape_candidate> best_from_gen(generations_count);
 
@@ -187,34 +186,37 @@ int main(int argc, char **argv) {
 
         // move winners to another storage
         for (int wi = 0; wi < top_shapes_count; ++wi) {
-            winners[wi] = std::move(shapes[wi]);
+            winners[wi].first = shapes[wi];
         }
 
         ts.sub("gen_mut");
         for (int gi = 0; gi < generations_count; ++gi) {
+            for (int wi = 0; wi < top_shapes_count; ++wi) {
+                winners[wi].second = children_count;
+            }
             ssc.call(shapes, top_shapes_count * children_count,
                      [&](auto b_begin, auto b_end, int sz) {
-                         std::mutex mt;
-                         pll.call(winners, top_shapes_count,
-                                  [&](auto w_begin, auto w_end) {
-                                      for (auto win_it = w_begin; win_it != w_end; ++win_it) {
-                                          for (int ci = 0; ci < children_count; ++ci) {
-                                              mt.lock();
-                                              // TODO: research this if
-                                              if (b_begin == b_end) {
-                                                  mt.unlock();
-                                                  return;
-                                              }
-                                              shape_candidate &sh = *b_begin;
-                                              ++b_begin;
-                                              mt.unlock();
-                                              shape_candidate &w = *win_it;
-                                              sh.md = shp.mutateShapeData(w.md);
-                                              sh.score_delta = overlay_compare(base_img, canvas,
-                                                                               shp.applyShapeData(sh.md), sh.md.coords);
-                                          }
-                                      }
-                                  });
+                         std::atomic_int32_t w_i = 0;
+                         pll.call<decltype(shapes)>(b_begin, sz,
+                                                    [&](auto bb_begin, auto bb_end) {
+                                                        while (bb_begin != bb_end) {
+                                                            int t_w = w_i++;
+                                                            if (t_w >= winners.size()) return;
+                                                            auto &[w, ch_left] = winners[t_w];
+                                                            while (ch_left > 0) {
+                                                                if (bb_begin == bb_end) {
+                                                                    return;
+                                                                }
+
+                                                                shape_candidate &sh = *bb_begin;
+                                                                sh.md = shp.mutateShapeData(w.md);
+                                                                sh.score_delta = overlay_compare(base_img, canvas,
+                                                                    shp.applyShapeData(sh.md), sh.md.coords);
+                                                                ++bb_begin;
+                                                                --ch_left;
+                                                            }
+                                                        }
+                                                    });
                      },
                      [](const shape_candidate &a, const shape_candidate &b) {
                          return a.score_delta > b.score_delta;
