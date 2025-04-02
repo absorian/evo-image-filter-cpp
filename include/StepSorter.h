@@ -28,7 +28,7 @@ public:
             fn(storage.begin() + cur_batch_offt, storage.begin() + cur_batch_size, cur_batch_size);
             el_count += cur_batch_size;
 
-            std::sort(storage.begin(), storage.begin() + cur_batch_size, comparator);
+            std::sort(storage.begin(), storage.end(), comparator);
             batch_i++;
         }
     }
