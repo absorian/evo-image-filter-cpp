@@ -1,6 +1,5 @@
 #include <iostream>
 #include <filesystem>
-#include <mutex>
 
 #include <boost/gil/image.hpp>
 #include <boost/gil/extension/io/jpeg.hpp>
@@ -12,7 +11,6 @@
 #include "ImageOps.h"
 #include "Parallelizer.h"
 #include "Shaper.h"
-#include "StepSorter.h"
 #include "Timestamper.h"
 
 
@@ -52,8 +50,8 @@ int main(int argc, char **argv) {
                                           {'s', "shapes"}, 2000);
 
     args::ValueFlag<int> arg_score_threshold(parser, "score_threshold",
-                                              "Stop score in range 0..10000",
-                                              {'t', "threshold"}, -1);
+                                             "Stop score in range 0..10000",
+                                             {'t', "threshold"}, -1);
 
     args::ValueFlag<int> arg_initial_swarm(parser, "initial_swarm",
                                            "Number of shapes in initial swarm",
@@ -141,10 +139,9 @@ int main(int argc, char **argv) {
             throw std::invalid_argument("shape_resize accepts only positive values");
         }
         shape_sz.y = sz_arg[1];
-    } while(false);
+    } while (false);
 
     Timestamper ts("prog");
-    StepSorter ssc(top_shapes_count);
     Parallelizer pll(threads_count);
 
     Shaper shp(dir_path, shape_sz);
@@ -155,8 +152,10 @@ int main(int argc, char **argv) {
     const long base_pix_count = base_img.height() * base_img.width();
     std::cout << ts.stamp() << "Retrieved base image" << '\n';
 
-    std::vector<shape_candidate> shapes(ssc.storage_size);
+    std::vector<shape_candidate> shapes(std::max(top_shapes_count * children_count,
+                                                 initial_shapes_create_count));
     std::vector<shape_candidate> winners(top_shapes_count);
+    // TODO: create an ability to pass existing canvas
     alpha_img_t canvas(base_img.dimensions());
     std::vector<shape_candidate> best_from_gen(generations_count);
 
@@ -165,60 +164,58 @@ int main(int argc, char **argv) {
 
     long long score = 0;
 
+    // TODO: new algorithm - make edge detection
+    // allow coordinates only near edges, then remove this mask
+    // and let it fix the imperfections near edges (expected to be by design already)
+
+    // TODO: make overlay_compare computed by gpu
+    // need to compute each pixel in parallel
+    // adapt image type and matrix type to opencl
+    // simplify GIL if needed
+    // perform matrix multiplications in parallel
     for (int csi = 0; csi < canvas_shapes_count; ++csi) {
         std::cout << "----------------------------------" << '\n';
         ts.sub("shape#" + std::to_string(csi + 1));
-        ssc.call(shapes, initial_shapes_create_count,
-                 [&](auto b_begin, auto b_end, int b_sz) {
-                     pll.call<decltype(shapes)>(b_begin, b_sz, [&](auto bb_begin, auto bb_end) {
-                         for (auto bb_it = bb_begin; bb_it != bb_end; ++bb_it) {
-                             shape_candidate &sh = *bb_it;
-                             sh.md = shp.generateShapeData();
+        pll.call(shapes, initial_shapes_create_count, [&](auto sh_it, auto sh_end) {
+            for (; sh_it != sh_end; ++sh_it) {
+                shape_candidate &sh = *sh_it;
+                sh.md = shp.generateShapeData();
 
-                             sh.score_delta = overlay_compare(base_img, canvas,
-                                                              shp.applyShapeData(sh.md), sh.md.coords);
-                         }
-                     });
-                 },
-                 [](const shape_candidate &a, const shape_candidate &b) {
-                     return a.score_delta > b.score_delta;
-                 });
+                sh.score_delta = overlay_compare(base_img, canvas,
+                                                 shp.applyShapeData(sh.md), sh.md.coords);
+            }
+        });
+        std::sort(shapes.begin(), shapes.begin() + initial_shapes_create_count,
+                  [](const shape_candidate &a, const shape_candidate &b) {
+                      return a.score_delta > b.score_delta;
+                  });
         std::cout << ts.stamp() << "Initial swarm ready" << '\n';
 
         // move winners to another storage
         for (int wi = 0; wi < top_shapes_count; ++wi) {
-            winners[wi] = std::move(shapes[wi]);
+            winners[wi] = shapes[wi];
         }
 
         ts.sub("gen_mut");
         for (int gi = 0; gi < generations_count; ++gi) {
-            ssc.call(shapes, top_shapes_count * children_count,
-                     [&](auto b_begin, auto b_end, int sz) {
-                         std::mutex mt;
-                         pll.call(winners, top_shapes_count,
-                                  [&](auto w_begin, auto w_end) {
-                                      for (auto win_it = w_begin; win_it != w_end; ++win_it) {
-                                          for (int ci = 0; ci < children_count; ++ci) {
-                                              mt.lock();
-                                              // TODO: research this if
-                                              if (b_begin == b_end) {
-                                                  mt.unlock();
-                                                  return;
-                                              }
-                                              shape_candidate &sh = *b_begin;
-                                              ++b_begin;
-                                              mt.unlock();
-                                              shape_candidate &w = *win_it;
-                                              sh.md = shp.mutateShapeData(w.md);
-                                              sh.score_delta = overlay_compare(base_img, canvas,
-                                                                               shp.applyShapeData(sh.md), sh.md.coords);
-                                          }
-                                      }
-                                  });
-                     },
-                     [](const shape_candidate &a, const shape_candidate &b) {
-                         return a.score_delta > b.score_delta;
+            std::atomic_uint32_t sh_i = 0;
+            pll.call(winners, top_shapes_count,
+                     [&](auto w_it, auto w_end) {
+                         for (; w_it != w_end; ++w_it) {
+                             const shape_candidate &w = *w_it;
+                             for (int ch = 0; ch < children_count; ++ch) {
+                                 auto &[score_delta, md] = shapes[sh_i++];
+                                 md = shp.mutateShapeData(w.md);
+                                 score_delta = overlay_compare(base_img, canvas,
+                                                               shp.applyShapeData(md), md.coords);
+                             }
+                         }
                      });
+            std::sort(shapes.begin(), shapes.begin() + top_shapes_count * children_count,
+                      [](const shape_candidate &a, const shape_candidate &b) {
+                          return a.score_delta > b.score_delta;
+                      });
+
             std::cout << ts.stamp() << "#" << gi + 1
                     << ": best_raw_score_delta=" << shapes[0].score_delta << '\n';
             best_from_gen[gi] = shapes[0];
