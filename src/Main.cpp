@@ -57,10 +57,10 @@ int main(int argc, char **argv) {
 
     args::ValueFlag<int> arg_initial_swarm(parser, "initial_swarm",
                                            "Number of shapes in initial swarm",
-                                           {"init-swarm"}, 800);
+                                           {"swarm"}, 800);
     args::ValueFlag<int> arg_survived_count(parser, "survived_count",
                                             "Number of survived shapes after one cycle",
-                                            {"survived-count"}, 150);
+                                            {"survived"}, 150);
     args::ValueFlag<int> arg_children_count(parser, "children_count",
                                             "Number of children for each survived shape",
                                             {"children"}, 5);
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
                                            {'j'}, 16);
     args::ValueFlag<int> arg_shapes_per_save(parser, "shapes_per_save",
                                              "Each N of added shapes the program will save the canvas",
-                                             {"shapes-save"}, 5);
+                                             {"shapes-per-save"}, 5);
 
     args::ValueFlagList<int> arg_shape_resize(parser, "shape_resize",
                                               "Resize shapes to specified resolution, if one value is passed,"
