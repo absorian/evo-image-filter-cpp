@@ -42,7 +42,7 @@ void Shaper::setBaseImage(const alpha_img_t &img) {
     coords_bounds.yhigh = dim.y * gen_boundaries_sz_mul;
 }
 
-shape_metadata Shaper::mutateShapeData(const shape_metadata &md) {
+shape_metadata Shaper::mutateShapeData(const shape_metadata &md) const {
     const auto base_img_dim = base_img.dimensions();
     point coords{
         lrand(-mut_boundaries_base_img_mul * base_img_dim.x,
@@ -70,7 +70,7 @@ shape_metadata Shaper::mutateShapeData(const shape_metadata &md) {
     };
 }
 
-alpha_img_t Shaper::applyShapeData(const shape_metadata &md) {
+alpha_img_t Shaper::applyShapeData(const shape_metadata &md) const {
     const auto &src_img = templates[md.idx];
 
     auto bview = const_view(base_img);
@@ -101,7 +101,7 @@ alpha_img_t Shaper::applyShapeData(const shape_metadata &md) {
     return transform_image(templates[md.idx], md.deg, md.sz_mul, col);
 }
 
-shape_metadata Shaper::generateShapeData() {
+shape_metadata Shaper::generateShapeData() const {
     shape_metadata md;
     md.idx = lrand(0, templates.size());
     const auto &src_img = templates[md.idx];

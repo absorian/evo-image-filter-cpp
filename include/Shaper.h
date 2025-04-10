@@ -30,9 +30,9 @@ public:
 
     void setBaseImage(const alpha_img_t &img);
 
-    shape_metadata mutateShapeData(const shape_metadata &md);
+    shape_metadata mutateShapeData(const shape_metadata &md) const;
 
-    alpha_img_t applyShapeData(const shape_metadata &md);
+    alpha_img_t applyShapeData(const shape_metadata &md) const;
 
-    shape_metadata generateShapeData();
+    shape_metadata generateShapeData() const;
 };
