@@ -17,7 +17,9 @@ public:
               const std::function<void(typename Ct::iterator, typename Ct::iterator)> &fn) {
         const int el_per_thread = element_limit / threads_count;
         for (int i = 0; i < threads_count; ++i) {
-            auto rbound = i + 1 == threads_count ? storage.end() : storage.begin() + el_per_thread * (i + 1);
+            auto rbound = i + 1 == threads_count
+                              ? storage.begin() + element_limit // end
+                              : storage.begin() + el_per_thread * (i + 1);
             futs[i] = std::async(std::launch::async, fn,
                                  storage.begin() + el_per_thread * i, rbound);
         }
