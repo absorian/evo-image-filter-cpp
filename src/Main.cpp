@@ -244,6 +244,7 @@ int main(int argc, char **argv) {
         ts.dry_out();
     }
     write_view(out_path, const_view(canvas), boost::gil::png_tag());
+    std::cout << ts.stamp() << "Saved canvas" << '\n';
 
     return 0;
 }
