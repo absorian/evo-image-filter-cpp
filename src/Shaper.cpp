@@ -23,9 +23,9 @@ Shaper::Shaper(const std::string &dir, point<int> shape_sz) {
         }
 
         if (shape_sz.x > 0)
-            templates.push_back(scale_image(grayscale_filter(img), shape_sz));
+            templates.push_back(scale_image(img, shape_sz));
         else
-            templates.push_back(grayscale_filter(img));
+            templates.push_back(img);
     }
     if (templates.empty()) {
         throw std::runtime_error("Shaper got nothing from specified directory: " + path.string());

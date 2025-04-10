@@ -11,8 +11,7 @@
 
 using namespace boost::gil;
 
-
-alpha_img_t grayscale_filter(const alpha_img_t &img) {
+alpha_img_t colorize_mask(const alpha_img_t &img, const pix_t &col) {
     alpha_img_t out_img(img.dimensions());
 
     auto out = view(out_img);
@@ -21,39 +20,8 @@ alpha_img_t grayscale_filter(const alpha_img_t &img) {
         for (int x = 0; x < in.width(); ++x) {
             auto src = in(x, y);
 
-            gray8_pixel_t gray;
-            color_convert(src, gray);
-
-            color_convert(gray, out(x, y));
-
+            color_convert(col, out(x, y));
             get_color(out(x, y), alpha_t()) = get_color(src, alpha_t());
-        }
-    }
-    return out_img;
-}
-
-
-alpha_img_t grayscale_colorize(const alpha_img_t &img, const pix_t &col) {
-    alpha_img_t out_img(img.dimensions());
-
-    auto out = view(out_img);
-    auto in = const_view(img);
-    for (int y = 0; y < in.height(); ++y) {
-        for (int x = 0; x < in.width(); ++x) {
-            auto src = in(x, y);
-
-            gray8_pixel_t gray;
-            color_convert(src, gray);
-
-            double g = get_color(gray, gray_color_t()) / 255.;
-            alpha_pix_t pix(
-                std::min(static_cast<int>(get_color(col, red_t()) * g), 255),
-                std::min(static_cast<int>(get_color(col, green_t()) * g), 255),
-                std::min(static_cast<int>(get_color(col, blue_t()) * g), 255),
-                get_color(src, alpha_t())
-            );
-
-            out(x, y) = pix;
         }
     }
     return out_img;
@@ -73,7 +41,7 @@ alpha_img_t transform_image(const alpha_img_t &img, double deg, double sz_mul, c
     resample_subimage(const_view(img), view(tr_img), 0.0, 0.0,
                       img.width(), img.height(), deg * M_PI / 180., nearest_neighbor_sampler());
 
-    return grayscale_colorize(tr_img, col);
+    return colorize_mask(tr_img, col);
 }
 
 alpha_img_t read_png_or_jpg(const std::string &path) {
@@ -109,7 +77,7 @@ int color_similarity_score(const alpha_pix_t &c1, const alpha_pix_t &c2) {
 }
 
 int64_t overlay_compare(const alpha_img_t &base_img, alpha_img_t &canvas, const alpha_img_t &shape,
-                    point<int> coords, bool set) {
+                        point<int> coords, bool set) {
     if (base_img.dimensions() != canvas.dimensions()) {
         std::cerr << "Base image and canvas are not the same size\n";
         return -1;

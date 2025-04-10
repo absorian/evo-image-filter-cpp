@@ -2,9 +2,7 @@
 
 #include "Types.h"
 
-alpha_img_t grayscale_filter(const alpha_img_t &img);
-
-alpha_img_t grayscale_colorize(const alpha_img_t &img, const pix_t &col);
+alpha_img_t colorize_mask(const alpha_img_t &img, const pix_t &col);
 
 alpha_img_t scale_image(const alpha_img_t &img, const boost::gil::point<int>& sz);
 
