@@ -21,10 +21,11 @@ class Shaper {
     } coords_bounds;
 
 public:
+    // TODO: unify under one parameter and put it in option
     const float gen_boundaries_sz_mul = 1.25;
     const float mut_boundaries_base_img_mul = 0.2;
-    const float mut_boundaries_shape_deg = 60;
-    const float mut_boundaries_shape_sz_mul = 0.5;
+    const float mut_boundaries_shape_deg = 40;
+    const float mut_boundaries_shape_sz_mul = 0.3;
 
     explicit Shaper(const std::string &dir, boost::gil::point<int> shape_sz);
 
