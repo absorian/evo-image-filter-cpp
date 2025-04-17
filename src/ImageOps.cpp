@@ -63,17 +63,12 @@ alpha_img_t read_png_or_jpg(const std::string &path) {
 }
 
 int color_similarity_score(const alpha_pix_t &c1, const alpha_pix_t &c2) {
-    double sim = 0;
-    sim += std::abs(get_color(c1, red_t()) - get_color(c2, red_t())) / 255.;
-    sim += std::abs(get_color(c1, green_t()) - get_color(c2, green_t())) / 255.;
-    sim += std::abs(get_color(c1, blue_t()) - get_color(c2, blue_t())) / 255.;
+    int diff = 0;
+    diff += std::abs(get_color(c1, red_t()) - get_color(c2, red_t()));
+    diff += std::abs(get_color(c1, green_t()) - get_color(c2, green_t()));
+    diff += std::abs(get_color(c1, blue_t()) - get_color(c2, blue_t()));
 
-    // average difference
-    sim /= 3;
-    // invert to get score
-    sim = 1 - sim;
-    // 0..100
-    return static_cast<int>(sim * 100);
+    return 255 * 3 - diff;
 }
 
 int64_t overlay_compare(const alpha_img_t &base_img, alpha_img_t &canvas, const alpha_img_t &shape,
@@ -121,7 +116,7 @@ int64_t overlay_compare(const alpha_img_t &base_img, alpha_img_t &canvas, const 
                 static_cast<uint8_t>(std::round(out_r)),
                 static_cast<uint8_t>(std::round(out_g)),
                 static_cast<uint8_t>(std::round(out_b)),
-                255);
+                255); // TODO: compose alpha
 
             // Update the delta
             sd -= color_similarity_score(bview(bx, by), cview(bx, by));

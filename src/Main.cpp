@@ -25,7 +25,7 @@ enum image_extension {
 };
 
 #define map_range(a1,a2,b1,b2,s) (b1 + (s - a1) * (b2 - b1) / (a2 - a1))
-#define pretty_score(overall, score) map_range(0, (overall * 100), 0, 10000, score)
+#define pretty_score(overall, score) map_range(0, (overall * 765), 0, 10000, score)
 
 int main(int argc, char **argv) {
     args::ArgumentParser parser(
